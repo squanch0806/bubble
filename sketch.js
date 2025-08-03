@@ -150,7 +150,7 @@ function setup() {
       }
     }
   };
-  video = createCapture(constraints, { flipped: true });
+  video = createCapture(constraints, { flipped: false });
   video.hide();
 
   faceMesh.detectStart(video, gotFaces);
