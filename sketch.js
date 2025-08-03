@@ -27,7 +27,8 @@ const skyBlue = {
 };
 
 function preload() {
-  faceMesh = ml5.faceMesh({ maxFaces: 1, flipped: true });
+  // Load the face mesh model and the gum image
+  faceMesh = ml5.faceMesh({ maxFaces: 1, flipHorizontal: true });
   img = loadImage("gum_face.png");
   bubbleTexture = loadImage("bubble_texture.png");
 }
@@ -150,6 +151,7 @@ function setup() {
       }
     }
   };
+  // Capture video from webcam
   video = createCapture(constraints);
   video.hide();
 
@@ -267,15 +269,18 @@ function updateAndDrawParticles(bubbleSize) {
 function explodeParticles(bubbleX, bubbleY, bubbleSize) {
   exploded = true;
   
+  // 爆炸所有现有粒子
   for (let particle of particles) {
     particle.explode();
   }
   
+  // 在泡泡位置创建新的爆炸粒子
   for (let i = 0; i < 150; i++) {
     let radius = random(0, bubbleSize * 0.8);
     let theta = random(TWO_PI);
     let phi = random(PI);
     
+    // 计算相对于泡泡中心的位置
     let x = radius * sin(phi) * cos(theta);
     let y = radius * sin(phi) * sin(theta);
     let z = radius * cos(phi);
@@ -348,19 +353,27 @@ function draw() {
   translate(-width / 2, -height / 2);
   background(0);
 
-  image(video, 0, 0);
+  // Display the webcam video with horizontal mirroring
+  push();
+  translate(width, 0);
+  scale(-1, 1);
+  image(video, 0, 0, width, height);
+  pop();
 
   if (faces.length == 0) {
     state = "NOTHING";
   }
   
+  // 处理爆炸效果
   if (exploded && faces.length > 0) {
     let face = faces[0];
     let distMouthH = round(dist(face.keypoints[14].x,face.keypoints[14].y, face.keypoints[13].x,face.keypoints[13].y),1);
     
+    // 在嘴巴位置显示爆炸效果
     push();
     translate(face.keypoints[13].x, face.keypoints[13].y+distMouthH/2, 0);
     
+    // 更新和显示所有粒子
     for (let i = particles.length - 1; i >= 0; i--) {
       let isAlive = particles[i].update();
       if (isAlive) {
@@ -370,14 +383,17 @@ function draw() {
       }
     }
     
+    // 当所有粒子消失后，重置爆炸状态
     if (particles.length === 0) {
       exploded = false;
     }
     pop();
   } else if (exploded) {
+    // 如果没有检测到脸，在屏幕中心显示爆炸效果
     push();
     translate(width/2, height/2, 0);
     
+    // 更新和显示所有粒子
     for (let i = particles.length - 1; i >= 0; i--) {
       let isAlive = particles[i].update();
       if (isAlive) {
@@ -387,6 +403,7 @@ function draw() {
       }
     }
     
+    // 当所有粒子消失后，重置爆炸状态
     if (particles.length === 0) {
       exploded = false;
     }
@@ -472,7 +489,10 @@ function draw() {
       case 'BUBBLEPOP':
         background(skyBlue.r, skyBlue.g, skyBlue.b);
         let lastBubbleSize = maxBubbleSize * bubblePercent / 100;
-        explodeParticles(face.keypoints[13].x, face.keypoints[13].y+distMouthH/2, lastBubbleSize);
+        // 确保爆炸位置与嘴巴位置一致
+        let bubbleX = face.keypoints[13].x;
+        let bubbleY = face.keypoints[13].y+distMouthH/2;
+        explodeParticles(bubbleX, bubbleY, lastBubbleSize);
         bubblePercent = 0;
         state = "GUMONFACE";
         break;
